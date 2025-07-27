@@ -1,137 +1,640 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Price Prediction</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoValuator - Smart Car Price Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-in-out",
+              "slide-up": "slideUp 0.3s ease-out",
+              "bounce-in": "bounceIn 0.6s ease-out",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0" },
+                "100%": { opacity: "1" },
+              },
+              slideUp: {
+                "0%": { transform: "translateY(20px)", opacity: "0" },
+                "100%": { transform: "translateY(0)", opacity: "1" },
+              },
+              bounceIn: {
+                "0%": { transform: "scale(0.3)", opacity: "0" },
+                "50%": { transform: "scale(1.05)" },
+                "70%": { transform: "scale(0.9)" },
+                "100%": { transform: "scale(1)", opacity: "1" },
+              },
+            },
+          },
+        },
+      };
+    </script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+      .glassmorphism {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
+      .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
 
-        .container {
-            background: #ffffff;
-            padding: 30px 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            max-width: 450px;
-            width: 100%;
-        }
+      .floating-label {
+        transition: all 0.3s ease;
+      }
 
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 25px;
-        }
+      .floating-label.active {
+        transform: translateY(-20px) scale(0.85);
+        color: #667eea;
+      }
 
-        form label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #444;
-        }
+      .form-input:focus + .floating-label,
+      .form-input:not(:placeholder-shown) + .floating-label {
+        transform: translateY(-20px) scale(0.85);
+        color: #667eea;
+      }
 
-        form input,
-        form select {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
-        }
+      .tooltip {
+        position: relative;
+      }
 
-        input[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 200px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+      }
 
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
 
-        .prediction {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 18px;
-            color: #1d3557;
-            font-weight: 600;
+      .loading {
+        display: none;
+      }
+
+      .loading.active {
+        display: inline-block;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+
+      /* Custom dropdown styling */
+      .custom-select {
+        position: relative;
+      }
+
+      .custom-select select {
+        padding-right: 40px; /* Space for arrow */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+
+      .custom-select::after {
+        content: "";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #6b7280;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .custom-select:focus-within::after {
+        border-top-color: #3b82f6;
+      }
+
+      /* Hide number input spinners */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
+      /* Adjust tooltip positioning to avoid conflicts */
+      .tooltip {
+        position: relative;
+        z-index: 5;
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Car Price Prediction</h2>
-        <form action="/predict" method="post">
-    <label for="vehicle_age">Vehicle Age:</label>
-    <input type="number" name="vehicle_age" min="0" required>
+  </head>
+  <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl">
+      <!-- Header -->
+      <div class="text-center mb-8 animate-fade-in">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
+          <i class="fas fa-car text-yellow-300 mr-3"></i>
+          AutoValuator
+        </h1>
+        <p class="text-xl text-white/90">Smart Car Price Estimator</p>
+      </div>
 
-    <label for="km_driven">KM Driven:</label>
-    <input type="number" name="km_driven" min="0" required>
+      <!-- Main Form Card -->
+      <div class="glassmorphism rounded-2xl p-8 shadow-2xl animate-slide-up">
+        <form id="predictionForm" class="space-y-6">
+          <!-- Vehicle Age -->
+          <div class="relative">
+            <input
+              type="number"
+              id="vehicle_age"
+              name="vehicle_age"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="0"
+              max="30"
+              required
+            />
+            <label
+              for="vehicle_age"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-calendar-alt mr-2"></i>Vehicle Age (years)
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text"
+                >Enter the age of the vehicle in years (0-30)</span
+              >
+            </div>
+          </div>
 
-    <label for="mileage">Mileage (kmpl):</label>
-    <input type="number"  min="1.0" name="mileage" required>
+          <!-- KM Driven -->
+          <div class="relative">
+            <input
+              type="number"
+              id="km_driven"
+              name="km_driven"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="100"
+              max="500000"
+              required
+            />
+            <label
+              for="km_driven"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-road mr-2"></i>Kilometers Driven
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text"
+                >Total kilometers driven (100-500,000)</span
+              >
+            </div>
+          </div>
 
-    <label for="engine">Engine (CC):</label>
-    <input type="number" name="engine" min="0" required>
+          <!-- Mileage -->
+          <div class="relative">
+            <input
+              type="number"
+              id="mileage"
+              name="mileage"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="5"
+              max="35"
+              step="0.1"
+              required
+            />
+            <label
+              for="mileage"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-tachometer-alt mr-2"></i>Mileage (kmpl)
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text">Fuel efficiency in kmpl (5-35)</span>
+            </div>
+          </div>
 
-    <label for="max_power">Max Power (bhp):</label>
-    <input type="number"  min="0" name="max_power" required>
+          <!-- Engine -->
+          <div class="relative">
+            <input
+              type="number"
+              id="engine"
+              name="engine"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="600"
+              max="4000"
+              required
+            />
+            <label
+              for="engine"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-cog mr-2"></i>Engine (CC)
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text"
+                >Engine displacement in CC (600-4000)</span
+              >
+            </div>
+          </div>
 
-    <label for="seats">Seats:</label>
-    <input type="number" name="seats" min="1" required>
+          <!-- Max Power -->
+          <div class="relative">
+            <input
+              type="number"
+              id="max_power"
+              name="max_power"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="30"
+              max="400"
+              step="0.1"
+              required
+            />
+            <label
+              for="max_power"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-bolt mr-2"></i>Max Power (bhp)
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text">Maximum power in bhp (30-400)</span>
+            </div>
+          </div>
 
-    <label for="seller_type">Seller Type:</label>
-    <select name="seller_type">
-        <option value="Dealer">Dealer</option>
-        <option value="Individual">Individual</option>
-        <option value="Trustmark Dealer">Trustmark Dealer</option>
-    </select>
+          <!-- Seats -->
+          <div class="relative">
+            <input
+              type="number"
+              id="seats"
+              name="seats"
+              class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              placeholder=" "
+              min="2"
+              max="10"
+              required
+            />
+            <label
+              for="seats"
+              class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none"
+            >
+              <i class="fas fa-chair mr-2"></i>Number of Seats
+            </label>
+            <div class="tooltip absolute right-3 top-3">
+              <i class="fas fa-question-circle text-gray-400"></i>
+              <span class="tooltip-text">Total number of seats (2-10)</span>
+            </div>
+          </div>
 
-    <label for="fuel_type">Fuel Type:</label>
-    <select name="fuel_type">
-        <option value="Petrol">Petrol</option>
-        <option value="Diesel">Diesel</option>
-        <option value="CNG">CNG</option>
-        <option value="LPG">LPG</option>
-        <option value="Electric">Electric</option>
-    </select>
+          <!-- Dropdowns Row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Seller Type -->
+            <div class="relative custom-select">
+              <select
+                id="seller_type"
+                name="seller_type"
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              >
+                <option value="Dealer">Dealer</option>
+                <option value="Individual">Individual</option>
+                <option value="Trustmark Dealer">Trustmark Dealer</option>
+              </select>
+              <label
+                for="seller_type"
+                class="absolute left-4 -top-2 bg-white px-2 text-sm text-gray-500 pointer-events-none"
+              >
+                <i class="fas fa-user-tie mr-2"></i>Seller Type
+              </label>
+            </div>
 
-    <label for="transmission_type">Transmission:</label>
-    <select name="transmission_type">
-        <option value="Manual">Manual</option>
-        <option value="Automatic">Automatic</option>
-    </select>
+            <!-- Fuel Type -->
+            <div class="relative custom-select">
+              <select
+                id="fuel_type"
+                name="fuel_type"
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              >
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="CNG">CNG</option>
+                <option value="LPG">LPG</option>
+                <option value="Electric">Electric</option>
+              </select>
+              <label
+                for="fuel_type"
+                class="absolute left-4 -top-2 bg-white px-2 text-sm text-gray-500 pointer-events-none"
+              >
+                <i class="fas fa-gas-pump mr-2"></i>Fuel Type
+              </label>
+            </div>
 
-    <input type="submit" value="Predict Price">
-</form>
-        {% if error_message %}
-            <div class="error">{{ error_message }}</div>
-        {% endif %}
-        {% if success_message %}
-            <div class="success">{{ success_message }}</div>
-        {% endif %}
-        {% if prediction %}
-            <div class="prediction">Predicted Price: ₹{{ prediction }}</div>
-        {% endif %}
+            <!-- Transmission -->
+            <div class="relative custom-select">
+              <select
+                id="transmission_type"
+                name="transmission_type"
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 bg-white/80"
+              >
+                <option value="Manual">Manual</option>
+                <option value="Automatic">Automatic</option>
+              </select>
+              <label
+                for="transmission_type"
+                class="absolute left-4 -top-2 bg-white px-2 text-sm text-gray-500 pointer-events-none"
+              >
+                <i class="fas fa-cogs mr-2"></i>Transmission
+              </label>
+            </div>
+          </div>
 
-        {% if prediction_text %}
-            <div class="prediction">{{ prediction_text }}</div>
-        {% endif %}
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button
+              type="submit"
+              id="predictBtn"
+              class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <i class="fas fa-calculator mr-2"></i>
+              <span class="loading active">Predict Price</span>
+              <i class="fas fa-spinner animate-spin loading ml-2"></i>
+            </button>
+
+            <button
+              type="button"
+              id="resetBtn"
+              class="flex-1 bg-gray-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <i class="fas fa-redo mr-2"></i>
+              Reset Form
+            </button>
+          </div>
+        </form>
+
+        <!-- Prediction Result -->
+        <div id="predictionResult" class="mt-8 hidden animate-bounce-in">
+          <div
+            class="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg p-6 text-center shadow-lg"
+          >
+            <div class="text-4xl mb-2">💰</div>
+            <h3 class="text-2xl font-bold text-white mb-2">Predicted Price</h3>
+            <div
+              id="predictedPrice"
+              class="text-3xl font-bold text-white"
+            ></div>
+            <p class="text-white/90 mt-2">
+              Based on your vehicle specifications
+            </p>
+          </div>
+
+          <div class="mt-4 text-center">
+            <button
+              type="button"
+              id="tryAnotherBtn"
+              class="bg-yellow-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              Try Another Car
+            </button>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="mt-8 hidden animate-bounce-in">
+          <div class="bg-red-500 rounded-lg p-6 text-center shadow-lg">
+            <div class="text-4xl mb-2">⚠️</div>
+            <h3 class="text-xl font-bold text-white mb-2">
+              Oops! Something went wrong
+            </h3>
+            <div id="errorText" class="text-white/90"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center mt-8 animate-fade-in">
+        <p class="text-white/80">
+          Built by <span class="font-semibold">Rennet Mathew</span> |
+          <i class="fas fa-brain mr-1"></i>Powered by ML & Flask
+        </p>
+      </div>
     </div>
-</body>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("predictionForm");
+        const predictBtn = document.getElementById("predictBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const tryAnotherBtn = document.getElementById("tryAnotherBtn");
+        const predictionResult = document.getElementById("predictionResult");
+        const errorMessage = document.getElementById("errorMessage");
+        const predictedPrice = document.getElementById("predictedPrice");
+        const errorText = document.getElementById("errorText");
+        const loadingText = predictBtn.querySelector(".loading.active");
+        const spinner = predictBtn.querySelector(".fa-spinner");
+
+        // Form validation with proper ranges
+        function validateForm() {
+          const inputs = form.querySelectorAll("input[required]");
+          let isValid = true;
+          let errorMessages = [];
+
+          inputs.forEach((input) => {
+            const value = parseFloat(input.value);
+            const min = parseFloat(input.min);
+            const max = parseFloat(input.max);
+
+            if (!input.value) {
+              input.classList.add("border-red-500");
+              isValid = false;
+              errorMessages.push(`${input.name.replace("_", " ")} is required`);
+            } else if (value < min || value > max) {
+              input.classList.add("border-red-500");
+              isValid = false;
+              errorMessages.push(
+                `${input.name.replace(
+                  "_",
+                  " "
+                )} must be between ${min} and ${max}`
+              );
+            } else {
+              input.classList.remove("border-red-500");
+            }
+          });
+
+          return { isValid, errorMessages };
+        }
+
+        // Show loading state
+        function showLoading() {
+          loadingText.style.display = "none";
+          spinner.style.display = "inline-block";
+          predictBtn.disabled = true;
+        }
+
+        // Hide loading state
+        function hideLoading() {
+          loadingText.style.display = "inline-block";
+          spinner.style.display = "none";
+          predictBtn.disabled = false;
+        }
+
+        // Show prediction result
+        function showResult(price) {
+          predictedPrice.textContent = `₹${price}`;
+          predictionResult.classList.remove("hidden");
+          errorMessage.classList.add("hidden");
+
+          // Scroll to result
+          predictionResult.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+
+        // Show error
+        function showError(message) {
+          errorText.textContent = message;
+          errorMessage.classList.remove("hidden");
+          predictionResult.classList.add("hidden");
+        }
+
+        // Hide all results
+        function hideResults() {
+          predictionResult.classList.add("hidden");
+          errorMessage.classList.add("hidden");
+        }
+
+        // Form submission
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const validation = validateForm();
+          if (!validation.isValid) {
+            showError(validation.errorMessages.join(". "));
+            return;
+          }
+
+          showLoading();
+          hideResults();
+
+          const formData = new FormData(form);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch("/predict", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              showResult(result.predicted_price);
+            } else {
+              showError(
+                result.error || "An error occurred while predicting the price."
+              );
+            }
+          } catch (error) {
+            showError("Network error. Please try again.");
+          } finally {
+            hideLoading();
+          }
+        });
+
+        // Reset form
+        resetBtn.addEventListener("click", function () {
+          form.reset();
+          hideResults();
+
+          // Reset floating labels and validation
+          form.querySelectorAll(".form-input").forEach((input) => {
+            input.classList.remove("border-red-500");
+          });
+        });
+
+        // Try another car
+        tryAnotherBtn.addEventListener("click", function () {
+          form.reset();
+          hideResults();
+
+          // Scroll to top
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        // Real-time validation
+        form.querySelectorAll("input").forEach((input) => {
+          input.addEventListener("input", function () {
+            const value = parseFloat(this.value);
+            const min = parseFloat(this.min);
+            const max = parseFloat(this.max);
+
+            if (this.value && (value < min || value > max)) {
+              this.classList.add("border-red-500");
+            } else {
+              this.classList.remove("border-red-500");
+            }
+          });
+        });
+
+        // Floating label animation
+        form.querySelectorAll(".form-input").forEach((input) => {
+          input.addEventListener("focus", function () {
+            this.nextElementSibling.classList.add("active");
+          });
+
+          input.addEventListener("blur", function () {
+            if (!this.value) {
+              this.nextElementSibling.classList.remove("active");
+            }
+          });
+        });
+      });
+    </script>
+  </body>
 </html>
